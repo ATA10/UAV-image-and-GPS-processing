@@ -1,0 +1,105 @@
+{
+    "center_x": 39.65182512732968,
+    "center_y": 27.88305586242388,
+    "animal_coords": {
+        "animal_coords_1": {
+            "x": 39.65681332330933,
+            "y": 27.874198280334426,
+            "name": "Hayvan1",
+            "temperature": 17,
+            "distance_metre": 1350.876962276262
+        },
+        "animal_coords_2": {
+            "x": 39.65193691288696,
+            "y": 27.874327026367137,
+            "name": "Hayvan2",
+            "temperature": 19,
+            "distance_metre": 958.1939343339302
+        },
+        "animal_coords_3": {
+            "x": 39.652500869238246,
+            "y": 27.880506835937464,
+            "name": "Hayvan3",
+            "temperature": 21,
+            "distance_metre": 663.1806817861301
+        },
+        "animal_coords_4": {
+            "x": 39.64802226452556,
+            "y": 27.87660153961178,
+            "name": "Hayvan4",
+            "temperature": 23,
+            "distance_metre": 601.4736527149981
+        },
+        "animal_coords_5": {
+            "x": 39.65160517169058,
+            "y": 27.884369216918888,
+            "name": "Hayvan5",
+            "temperature": 25,
+            "distance_metre": 517.4511013723693
+        },
+        "animal_coords_6": {
+            "x": 39.656979181511794,
+            "y": 27.887587867736762,
+            "name": "Hayvan6",
+            "temperature": 27,
+            "distance_metre": 1163.5162681642578
+        },
+        "animal_coords_7": {
+            "x": 39.64871895557655,
+            "y": 27.89213689422602,
+            "name": "Hayvan7",
+            "temperature": 29,
+            "distance_metre": 763.776457749953
+        },
+        "animal_coords_8": {
+            "x": 39.6442401039215,
+            "y": 27.8913215026855,
+            "name": "Hayvan8",
+            "temperature": 31,
+            "distance_metre": 736.6505293179179
+        },
+        "animal_coords_9": {
+            "x": 39.64135357790563,
+            "y": 27.8830388412475,
+            "name": "Hayvan9",
+            "temperature": 33,
+            "distance_metre": 629.0938841648548
+        },
+        "animal_coords_10": {
+            "x": 39.642680731386115,
+            "y": 27.876901947021434,
+            "name": "Hayvan10",
+            "temperature": 35,
+            "distance_metre": 741.5002511380742
+        },
+        "animal_coords_11": {
+            "x": 39.647259213826835,
+            "y": 27.899303756713817,
+            "name": "Hayvan11",
+            "temperature": 37,
+            "distance_metre": 1353.4061522170534
+        }
+    },
+    "camera_coords": [
+        [
+            39.65022524920975,
+            27.885055862423798
+        ],
+        [
+            39.654224944509586,
+            27.885055862423798
+        ],
+        [
+            39.654224944509586,
+            27.880055862424
+        ],
+        [
+            39.65022524920975,
+            27.880055862424
+        ],
+        [
+            39.65022524920975,
+            27.885055862423798
+        ]
+    ]
+}

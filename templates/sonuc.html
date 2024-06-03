@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HARİTA</title>
+    <script src="https://api-maps.yandex.com/2.1/?lang=en_RU" type="text/javascript"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f0f0f0;
+        }
+        #map {
+            height: 80vh;
+            width: 90%;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        table {
+            margin-top: 10px;
+            border-collapse: collapse;
+            width: 80%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+        }
+        .header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>  
+    <div class="header">Hayvanların Koordinatları ve Bilgileri</div>
+    <table id="veriler">
+        <tr>
+            <th>Koordinatlar</th>
+            <th>Hayvanın Adı</th>
+            <th>Sıcaklık (°C)</th>
+        </tr>
+    </table>
+    <div class="header">Kamera Koordinatları</div>
+    <table id="veriler4">
+        <tr>
+            <th>Koordinatlar</th>
+        </tr>
+    </table>
+    <div class="header">Kamera Orta Nokta Koordinatı</div>
+    <table id="verilerorta">
+        <tr>
+            <th>Koordinatlar</th>
+        </tr>
+    </table>
+    <script>
+        ymaps.ready(init);
+        var map, polygon;
+        var mdList = {{ mdList | tojson }};
+        var orta_nokta = {{ orta_nokta | tojson }};
+        var rectangleCoordinates = {{ rcList | tojson }};
+        var animals_coords = {{ data['animal_coords'] | tojson }};
+        var table = document.getElementById('veriler');
+        var table1 = document.getElementById('veriler4');
+        var table2 = document.getElementById('verilerorta');
+        var orta_merkez;
+
+        function init() {
+            map = new ymaps.Map("map", {
+                center: orta_nokta,
+                zoom: 13
+            });
+
+            function updateData() {
+                fetch('/get_data')
+                    .then(response => response.json())
+                    .then(data => {
+                        mdList = Object.values(data.animal_coords).map(item => [item.x, item.y]);
+                        animals_coords = data.animal_coords;
+                        rectangleCoordinates = data.camera_coords;
+                        orta_nokta = [data.center_x, data.center_y];
+
+                        updateTable();
+                        updateMap();
+                    });
+            }
+
+            function updateTable() {
+                table.innerHTML = `
+                    <tr>
+                        <th>Koordinatlar</th>
+                        <th>Hayvanın Adı</th>
+                        <th>Sıcaklık (°C)</th>
+                    </tr>`;
+                for (var i = 0; i < mdList.length; i++) {
+                    var row = table.insertRow();
+                    var cell1 = row.insertCell();
+                    var cell2 = row.insertCell();
+                    var cell3 = row.insertCell();
+
+                    cell1.appendChild(document.createTextNode(mdList[i]));
+                    cell2.appendChild(document.createTextNode(animals_coords[`animal_coords_${i+1}`].name));
+                    cell3.appendChild(document.createTextNode(animals_coords[`animal_coords_${i+1}`].temperature));
+                }
+
+                table1.innerHTML = `
+                    <tr>
+                        <th>Kamera Koordinatları</th>
+                    </tr>`;
+                for (var i = 0; i < rectangleCoordinates.length - 1; i++) {
+                    var row = table1.insertRow();
+                    var cell = row.insertCell();
+                    cell.appendChild(document.createTextNode(rectangleCoordinates[i]));
+                }
+
+                table2.innerHTML = `
+                    <tr>
+                        <th>Kamera Orta Nokta Koordinatı</th>
+                    </tr>`;
+                var row = table2.insertRow();
+                var cell = row.insertCell();
+                cell.appendChild(document.createTextNode(orta_nokta));
+            }
+
+            function updateMap() {
+                map.geoObjects.removeAll();
+
+                for (var i = 0; i < mdList.length; i++) {
+                    var marker = new ymaps.Placemark(mdList[i], {}, {
+                        draggable: true
+                    });
+                    map.geoObjects.add(marker);
+
+                    // Draw a polyline between the current mdList point and orta_nokta
+                    var polyline = new ymaps.Polyline([mdList[i], orta_nokta], {}, {
+                        strokeColor: '#FF0000',
+                        strokeWidth: 3
+                    });
+                    map.geoObjects.add(polyline);
+                }
+
+                polygon = new ymaps.GeoObject({
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: [rectangleCoordinates],
+                        fillRule: "nonZero"
+                    },
+                    properties: {
+                        hintContent: "Rectangle"
+                    }
+                }, {
+                    draggable: true,
+                    strokeColor: '#0000FF',
+                    strokeOpacity: 0.8,
+                    strokeWidth: 2
+                });
+                map.geoObjects.add(polygon);
+
+                polygon.events.add('dragend', function (e) {
+                    var newRectangleCoordinates = polygon.geometry.getCoordinates()[0];
+                    rectangleCoordinates = newRectangleCoordinates;
+
+                    var sumLat = 0, sumLng = 0;
+                    for (var i = 0; i < newRectangleCoordinates.length; i++) {
+                        sumLat += newRectangleCoordinates[i][0];
+                        sumLng += newRectangleCoordinates[i][1];
+                    }
+                    var centerLat = sumLat / newRectangleCoordinates.length;
+                    var centerLng = sumLng / newRectangleCoordinates.length;
+
+                    table1.innerHTML = `
+                        <tr>
+                            <th>Kamera Koordinatları</th>
+                        </tr>`;
+                    for (var i = 0; i < newRectangleCoordinates.length - 1; i++)
+                    {
+                        var row = table1.insertRow();
+                        var cell = row.insertCell();
+                        cell.appendChild(document.createTextNode(newRectangleCoordinates[i]));
+                    }
+
+                    orta_merkez = [centerLat, centerLng];
+                    table2.innerHTML = `
+                        <tr>
+                            <th>Orta Nokta Koordinatı</th>
+                        </tr>`;
+                    var row = table2.insertRow();
+                    var cell = row.insertCell();
+                    cell.appendChild(document.createTextNode(orta_merkez));
+
+                    // Send new coordinates to the server
+                    fetch('/save_coordinates', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            camera_coords: newRectangleCoordinates,
+                            center_coords: orta_merkez
+                        })
+                    });
+                });
+            }
+
+            updateData();
+            setInterval(updateData, 1000);
+        }
+    </script>
+</body>
+</html>

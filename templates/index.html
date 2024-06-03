@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HARİTA</title>
+    <script src="https://api-maps.yandex.com/2.1/?lang=en_RU" type="text/javascript"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        #map {
+            height: 1000px;
+            width: 80%;
+            margin-top: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: none; /* Initially hide the map */
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+        }
+
+        .alert {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        #animalForm {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #animalForm input {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <form id="dataForm" method="POST" action="/sonuc">
+        <input type="hidden" id="markerData" name="markerData">
+        <input type="hidden" id="rectangleData" name="rectangleData">
+    </form>
+
+    <div id="animalForm">
+        <h1>İHA Hayvan Takip Sistemi</h1>
+        <input type="number" id="animalCount" placeholder="Hayvan Adeti Giriniz" min="1">
+        <button class="btn" onclick="startMapping()">Harita Başlat</button>
+    </div>
+
+    <div id="map"></div>
+    <button class="btn" onclick="submitForm()" style="display: none;" id="submitButton">Kaydet</button>
+    <div id="alert" class="alert" style="display: none;">Girilen Hayvan Miktarından fazla hayvan oluşturulamaz.</div>
+
+    <script>
+        ymaps.ready(init);
+        var map;
+        var rectangle;
+        var clickCounter = 0;
+        var animalCount;
+
+        function startMapping() {
+            animalCount = document.getElementById('animalCount').value;
+            if (animalCount && animalCount > 0) {
+                document.getElementById('animalForm').style.display = 'none';
+                document.getElementById('map').style.display = 'block';
+                document.getElementById('submitButton').style.display = 'inline-block';
+            } else {
+                alert('Lütfen hayvan miktarı giriniz.');
+            }
+        }
+
+        function init() {
+            map = new ymaps.Map("map", {
+                center: [39.6492, 27.8860], // Balıkesir'in merkezi
+                zoom: 15
+            });
+
+            map.events.add('click', function (e) {
+                if (clickCounter < animalCount) {
+                    var clickCoords = e.get('coords');
+                    addMarker(clickCoords);
+                    clickCounter++;
+                    updateFormData();  // Güncel veriyi formda sakla
+                } else {
+                    document.getElementById('alert').style.display = 'block';
+                }
+            });
+
+            function addMarker(coordinates) {
+                var marker = new ymaps.Placemark(coordinates, {}, {
+                    draggable: true
+                });
+
+                map.geoObjects.add(marker);
+
+                // Listen for the dragend event to capture new coordinates after moving
+                marker.events.add('dragend', function (e) {
+                    updateFormData();  // Güncel veriyi formda sakla
+                });
+            }
+
+            // Define the initial coordinates for the rectangle
+            var rectangleCoordinates = [
+                [39.645, 27.881],  // Bottom-left corner
+                [39.645, 27.886],  // Bottom-right corner
+                [39.649, 27.886],  // Top-right corner
+                [39.649, 27.881]   // Top-left corner
+            ];
+
+            // Create a draggable rectangle on the map
+            rectangle = new ymaps.GeoObject({
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [rectangleCoordinates],
+                    fillRule: "nonZero"
+                },
+                properties: {
+                    hintContent: "Rectangle"
+                }
+            }, {
+                draggable: true,
+                strokeColor: '#0000FF',
+                strokeOpacity: 0.8,
+                strokeWidth: 2
+            });
+
+            // Add the rectangle to the map
+            map.geoObjects.add(rectangle);
+
+            // Listen for the dragend event to capture new coordinates after moving
+            rectangle.events.add('dragend', function (e) {
+                // Calculate the center coordinates
+                var rectangleCoordinates = rectangle.geometry.getCoordinates()[0];
+                var sumLat = 0, sumLng = 0;
+                for (var i = 0; i < rectangleCoordinates.length; i++) {
+                    sumLat += rectangleCoordinates[i][0];
+                    sumLng += rectangleCoordinates[i][1];
+                }
+                var centerLat = sumLat / rectangleCoordinates.length;
+                var centerLng = sumLng / rectangleCoordinates.length;
+
+                updateFormData();  // Güncel veriyi formda sakla
+            });
+        }
+
+        function updateFormData() {
+            // Marker ve dikdörtgen verilerini formda sakla
+            var markerData = [];
+            map.geoObjects.each(function (geoObject) {
+                markerData.push(geoObject.geometry.getCoordinates());
+            });
+
+            var rectangleData = rectangle.geometry.getCoordinates()[0];
+
+            // JSON.stringify() ile JavaScript nesnelerini JSON formatına dönüştür
+            document.getElementById('markerData').value = JSON.stringify(markerData);
+            document.getElementById('rectangleData').value = JSON.stringify(rectangleData);
+        }
+
+        function submitForm() {
+            document.getElementById('dataForm').submit(); // Formu gönder
+        }
+    </script>
+</body>
+</html>
