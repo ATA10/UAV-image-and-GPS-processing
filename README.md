@@ -16,7 +16,7 @@ The main objective is to locate and track animals within a UAV image and visuali
 ## Installation
 
 1. Clone the repository:
-   git clone https://github.com/Alperenkarslix/UAV-Live-Animal-Detection.git
+   git clone https://github.com/ATA10/UAV-image-and-GPS-processing
    cd UAV-Live-Animal-Detection
 
 2. Create a virtual environment and activate it:
